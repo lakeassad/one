@@ -21,9 +21,4 @@ elasticsearch:7.17.14
 # 运维/监控
 prometheus:latest
 grafana:latest
-portainer/portainer-ce:latest
 
-# 非 Docker Hub 要写全前缀
-ghcr.io/open-webui/open-webui:main
-registry.k8s.io/pause:3.9
-mcr.microsoft.com/dotnet/sdk:8.0

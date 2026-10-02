@@ -20,6 +20,7 @@ jobs:
           password: ${{ secrets.ALIYUN_PASSWORD }}
 
       - name: Pull and push images
+        timeout-minutes: 120 # 防止大镜像同步超时
         env:
           REG: ${{ secrets.ALIYUN_REGISTRY }}
           NS: ${{ secrets.ALIYUN_NAMESPACE }}
@@ -30,15 +31,17 @@ jobs:
             case "$line" in \#*) continue;; esac
             
             src="$line"
+            # 将源地址的 / 替换为 __ 防止 ACR 仓库路径冲突
             rel="${src#*//}" 
             flat="$(echo "$rel" | sed 's#/#__#g')"
             dst="$REG/$NS/$flat"
             
-            echo ">> Syncing $src -> $dst"
+            echo ">> [START] Syncing $src -> $dst"
             if docker pull $src; then
               docker tag $src $dst
               docker push $dst
+              echo ">> [SUCCESS] $src synced!"
             else
-              echo "!! Failed to pull $src"
+              echo "!! [FAILED] Pull failed for $src"
             fi
           done < images.txt

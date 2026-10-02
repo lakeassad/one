@@ -19,8 +19,8 @@ jobs:
           username: ${{ secrets.ALIYUN_USERNAME }}
           password: ${{ secrets.ALIYUN_PASSWORD }}
 
-      - name: Pull and push images
-        timeout-minutes: 120 # 防止大镜像同步超时
+      - name: Pull and push images to github-hub
+        timeout-minutes: 120
         env:
           REG: ${{ secrets.ALIYUN_REGISTRY }}
           NS: ${{ secrets.ALIYUN_NAMESPACE }}
@@ -31,10 +31,9 @@ jobs:
             case "$line" in \#*) continue;; esac
             
             src="$line"
-            # 将源地址的 / 替换为 __ 防止 ACR 仓库路径冲突
-            rel="${src#*//}" 
-            flat="$(echo "$rel" | sed 's#/#__#g')"
-            dst="$REG/$NS/$flat"
+            # 将源地址中的斜杠替换为短横线，生成唯一且易读的 tag
+            flat="$(echo "${src#*//}" | sed 's#/#-#g')"
+            dst="$REG/$NS/github-hub:$flat"
             
             echo ">> [START] Syncing $src -> $dst"
             if docker pull $src; then

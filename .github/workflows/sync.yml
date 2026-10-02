@@ -31,9 +31,10 @@ jobs:
             case "$line" in \#*) continue;; esac
             
             src="$line"
-            # 将源地址中的斜杠替换为短横线，生成唯一且易读的 tag
-            flat="$(echo "${src#*//}" | sed 's#/#-#g')"
-            dst="$REG/$NS/github-hub:$flat"
+            # 提取最后一段并替换冒号为短横线，生成合法且易读的 tag
+            tag="${src##*/}"
+            tag="${tag//:/'-'}"
+            dst="$REG/$NS/github-hub:$tag"
             
             echo ">> [START] Syncing $src -> $dst"
             if docker pull $src; then

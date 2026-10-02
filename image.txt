@@ -1,0 +1,29 @@
+# 基础系统
+alpine:3.20
+ubuntu:22.04
+debian:12
+
+# Web/运行
+nginx:1.27-alpine
+node:20-alpine
+python:3.12-slim
+openjdk:17-jdk-slim
+tomcat:9.0
+
+# 数据库/缓存
+mysql:8.0
+postgres:16-alpine
+redis:7-alpine
+mongo:7.0
+rabbitmq:3-management
+elasticsearch:7.17.14
+
+# 运维/监控
+prometheus:latest
+grafana:latest
+portainer/portainer-ce:latest
+
+# 非 Docker Hub 要写全前缀
+ghcr.io/open-webui/open-webui:main
+registry.k8s.io/pause:3.9
+mcr.microsoft.com/dotnet/sdk:8.0

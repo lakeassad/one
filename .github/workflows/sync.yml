@@ -20,7 +20,7 @@ jobs:
           password: ${{ secrets.ALIYUN_PASSWORD }}
 
       - name: Pull and push images to github-hub
-        timeout-minutes: 120
+        timeout-minutes: 300
         env:
           REG: ${{ secrets.ALIYUN_REGISTRY }}
           NS: ${{ secrets.ALIYUN_NAMESPACE }}
@@ -31,17 +31,40 @@ jobs:
             case "$line" in \#*) continue;; esac
             
             src="$line"
-            # 提取最后一段并替换冒号为短横线，生成合法且易读的 tag
+            # 提取最后一段并替换冒号为短横线，生成合法 tag
             tag="${src##*/}"
             tag="${tag//:/'-'}"
             dst="$REG/$NS/github-hub:$tag"
             
-            echo ">> [START] Syncing $src -> $dst"
-            if docker pull $src; then
-              docker tag $src $dst
-              docker push $dst
-              echo ">> [SUCCESS] $src synced!"
-            else
-              echo "!! [FAILED] Pull failed for $src"
+            echo ">> [START] Checking $src -> $dst"
+            
+            # ✅ 新增：检查阿里云 ACR 是否已有该镜像（利用 docker manifest inspect 探测远程仓库）
+            if docker manifest inspect "$dst" > /dev/null 2>&1; then
+              echo "✅ $dst 已存在于 ACR，跳过本次同步！"
+              echo "-----------------------------------"
+              continue
             fi
+            
+            echo "⏳ $dst 不存在于 ACR，开始同步..."
+            
+            # 增加单镜像超时(10分钟)和重试机制(最多3次)
+            success=0
+            for i in 1 2 3; do
+              echo "Attempt $i to pull $src..."
+              if timeout 600 docker pull $src; then
+                docker tag $src $dst
+                docker push $dst
+                echo ">> [SUCCESS] $src synced!"
+                success=1
+                break
+              else
+                echo "!! [FAILED] Pull/Push failed for $src, retrying..."
+                sleep 5
+              fi
+            done
+            
+            if [ $success -eq 0 ]; then
+              echo "!! [ERROR] Failed to sync $src after 3 attempts, skipping."
+            fi
+            echo "-----------------------------------"
           done < images.txt

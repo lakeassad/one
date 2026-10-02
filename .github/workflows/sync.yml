@@ -1,4 +1,25 @@
-- name: Pull and push images to github-hub
+name: Bulk Sync Docker Images
+on:
+  push:
+    paths:
+      - 'images.txt'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Login ACR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ secrets.ALIYUN_REGISTRY }}
+          username: ${{ secrets.ALIYUN_USERNAME }}
+          password: ${{ secrets.ALIYUN_PASSWORD }}
+
+      - name: Pull and push images to github-hub
         timeout-minutes: 120
         env:
           REG: ${{ secrets.ALIYUN_REGISTRY }}
@@ -10,10 +31,9 @@
             case "$line" in \#*) continue;; esac
             
             src="$line"
-            # 提取最后一段并替换冒号为短横线，生成合法且易读的 tag
-            tag="${src##*/}"
-            tag="${tag//:/'-'}"
-            dst="$REG/$NS/github-hub:$tag"
+            # 将源地址中的斜杠替换为短横线，生成唯一且易读的 tag
+            flat="$(echo "${src#*//}" | sed 's#/#-#g')"
+            dst="$REG/$NS/github-hub:$flat"
             
             echo ">> [START] Syncing $src -> $dst"
             if docker pull $src; then
